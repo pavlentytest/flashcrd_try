@@ -1,0 +1,388 @@
+type: edu
+custom_name: What’s on the card?
+files:
+- name: src/flashcards/Main.kt
+  visible: true
+  text: |
+    package flashcards
+
+    fun main() {
+        println("Hello, World!")
+    }
+  learner_created: false
+- name: test/FlashcardsTest.java
+  visible: false
+  text: "import org.hyperskill.hstest.dynamic.input.DynamicTestingMethod;\nimport\
+    \ org.hyperskill.hstest.stage.StageTest;\nimport org.hyperskill.hstest.testcase.CheckResult;\n\
+    import org.hyperskill.hstest.testcase.TestCase;\nimport org.hyperskill.hstest.testing.TestedProgram;\n\
+    \n\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class FlashcardsTest\
+    \ extends StageTest<String> {\n    \n    //Test 1, in this case the user gets\
+    \ the correct definition, same as test 2\n    @DynamicTestingMethod\n    CheckResult\
+    \ test1() {\n        TestedProgram main = new TestedProgram();\n        String\
+    \ output;\n        \n        main.start();\n        \n        if (main.isFinished())\
+    \ {\n            return CheckResult.wrong(\"Your program should wait for user\
+    \ input\");\n        }\n        \n        main.execute(\"print()\");\n       \
+    \ main.execute(\"outputs text\");\n        output = main.execute(\"outputs text\"\
+    ).toLowerCase();\n        \n        if (output.equals(\"\") || output.matches(\"\
+    \\\\s+\")) {\n            return CheckResult.wrong(\"Your program does not provide\
+    \ feedback to the user\");\n        }\n        \n        if (!output.contains(\"\
+    right\")) {\n            return CheckResult.wrong(\"Your output should contain\
+    \ the word \\\"right\\\" if the user gets the definition\");\n        }\n    \
+    \    \n        return CheckResult.correct();\n        \n    }\n    \n    @DynamicTestingMethod\n\
+    \    CheckResult test2() {\n        TestedProgram main = new TestedProgram();\n\
+    \        String output;\n        \n        main.start();\n    \n        if (main.isFinished())\
+    \ {\n            return CheckResult.wrong(\"Your program should wait for user\
+    \ input\");\n        }\n        \n        main.execute(\"Dog\");\n        main.execute(\"\
+    A barking animal\");\n        output = main.execute(\"A barking animal\").toLowerCase();\n\
+    \        \n        if (output.equals(\"\") || output.matches(\"\\\\s+\")) {\n\
+    \            return CheckResult.wrong(\"Your program does not provide feedback\
+    \ to the user\");\n        }\n        \n        if (!output.contains(\"right\"\
+    )) {\n            return CheckResult.wrong(\"Your output should contain the word\
+    \ \\\"right\\\" if the user gets the definition\");\n        }\n        \n   \
+    \     return CheckResult.correct();\n        \n    }\n    //Test 3, in this case\
+    \ the user fails the definition, same as test 4\n    @DynamicTestingMethod\n \
+    \   CheckResult test3() {\n        TestedProgram main = new TestedProgram();\n\
+    \        String output;\n        \n        main.start();\n    \n        if (main.isFinished())\
+    \ {\n            return CheckResult.wrong(\"Your program should wait for user\
+    \ input\");\n        }\n        \n        main.execute(\"Jetbrains\");\n     \
+    \   main.execute(\"A place for people who love to code\");\n        output = main.execute(\"\
+    A place for people who hate to code\").toLowerCase();\n    \n        if (output.equals(\"\
+    \") || output.matches(\"\\\\s+\")) {\n            return CheckResult.wrong(\"\
+    Your program does not provide feedback to the user\");\n        }\n        \n\
+    \        if (!output.contains(\"wrong\")) {\n            return CheckResult.wrong(\"\
+    Your output should contain the word \\\"wrong\\\" if the user fails the definition\"\
+    );\n        }\n        \n        return CheckResult.correct();\n        \n   \
+    \ }\n    \n    @DynamicTestingMethod\n    CheckResult test4() {\n        TestedProgram\
+    \ main = new TestedProgram();\n        String output;\n        \n        main.start();\n\
+    \    \n        if (main.isFinished()) {\n            return CheckResult.wrong(\"\
+    Your program should wait for user input\");\n        }\n        \n        main.execute(\"\
+    Cat\");\n        main.execute(\"A barking animal\");\n        output = main.execute(\"\
+    A purring animal\").toLowerCase();\n        \n        if (output.equals(\"\")\
+    \ || output.matches(\"\\\\s+\")) {\n            return CheckResult.wrong(\"Your\
+    \ program does not provide feedback to the user\");\n        }\n        \n   \
+    \     if (!output.contains(\"wrong\")) {\n            return CheckResult.wrong(\"\
+    Your output should contain the word \\\"wrong\\\" if the user fails the definition\"\
+    );\n        }\n        \n        return CheckResult.correct();\n        \n   \
+    \ }\n    \n}\n"
+  learner_created: false
+- name: src/flashcards/CardRepository.kt
+  visible: true
+  text: |-
+    package flashcards
+
+    import java.io.*
+    import java.util.*
+    import java.util.function.Consumer
+    import java.util.stream.Collectors
+    import java.util.stream.Stream
+    import kotlin.collections.LinkedHashSet
+
+
+    class CardsRepository(ui: UI) {
+        private val cards: MutableSet<Card>
+        private val ui: UI
+        private val rnd: Random
+
+        init {
+            cards = LinkedHashSet()
+            rnd = Random()
+            this.ui = ui
+        }
+
+        fun cardsImport() {
+            ui.println("File name:")
+            val fileName= ui.nextLine()
+            cardsImport(fileName)
+        }
+
+        fun cardsImport(fileName: String?) {
+            try {
+                Scanner(File(fileName)).use { sc ->
+                    var count = 0
+                    while (sc.hasNext()) {
+                        val term  = sc.nextLine()
+                        val definition = sc.nextLine()
+                        val mistakes = sc.nextLine().toInt()
+                        cards.add(Card(term, definition, mistakes))
+                        ++count
+                    }
+                    ui.printf("%d cards have been loaded.%n", count)
+                }
+            } catch (e: FileNotFoundException) {
+                ui.println("File not found.")
+            }
+        }
+
+        fun cardsExport() {
+            ui.println("File name:")
+            val fileName = ui.nextLine()
+            cardsExport(fileName)
+        }
+
+        fun cardsExport(fileName: String) {
+            try {
+                PrintWriter(FileWriter(fileName)).use { out ->
+                    cards.forEach(Consumer { card: Card ->
+                        out.println(card.term)
+                        out.println(card.definition)
+                        out.println(card.mistakes)
+                    })
+                }
+            } catch (e: IOException) {
+                ui.println(e.message)
+            }
+            ui.printf("%d cards have been saved.%n", cards.size)
+        }
+
+        fun remove() {
+            ui.println("The card:")
+            val term = ui.nextLine()
+            cards.stream()
+                .filter { c: Card -> c.term == term }
+                .findFirst()
+                .ifPresentOrElse(
+                    { card: Card -> this.remove(card) }
+                ) { ui.printf("Can't remove \"%s\": there is no such card.%n", term) }
+        }
+
+        private fun remove(card: Card) {
+            cards.remove(card)
+            ui.println("The card has been removed.")
+        }
+
+        fun add() {
+            ui.println("The card:")
+            val term = ui.nextLine()
+            if (cards.stream().anyMatch { card: Card -> card.term == term }) {
+                ui.printf("The card \"%s\" already exists.%n", term)
+                return
+            }
+            ui.println("The definition of the card:")
+            val definition = ui.nextLine()
+            if (cards.stream().anyMatch { card: Card -> card.definition == definition }) {
+                ui.printf("The definition \"%s\" already exists.%n", definition)
+                return
+            }
+            cards.add(Card(term, definition, 0))
+            ui.printf("The pair (\"%s\":\"%s\") has been added.%n", term, definition)
+        }
+
+        fun ask() {
+            ui.println("How many times to ask?")
+            val n: Int = ui.nextLine().toInt()
+            val questions = cards.toTypedArray<Card>()
+            Stream.generate {
+                questions[rnd.nextInt(cards.size)]
+            }.limit(n.toLong()).forEach { card: Card -> askCard(card) }
+        }
+
+        private fun askCard(card: Card) {
+            ui.printf("Print the definition of \"%s\":%n", card.term)
+            val answer = ui.nextLine()
+            if (card.definition == answer) {
+                ui.println("Correct answer.")
+                return
+            }
+            card.increaseMistakes()
+            cards.stream()
+                .filter { x: Card -> x.definition == answer }
+                .findFirst()
+                .ifPresentOrElse(
+                    { otherCard: Card ->
+                        ui.printf(
+                            "Wrong answer. The correct one is \"%s\", you've just written the definition of \"%s\".%n",
+                            card.definition, otherCard.term
+                        )
+                    }
+                ) { ui.printf("Wrong answer. The correct one is \"%s\".%n", card.definition) }
+        }
+
+        fun resetStats() {
+            cards.forEach(Consumer { obj: Card -> obj.resetStats() })
+            ui.println("Card statistics has been reset.")
+        }
+
+        fun hardestCard() {
+            cards.stream()
+                .mapToInt(Card::mistakes)
+                .filter { mistakes: Int -> mistakes > 0 }
+                .max()
+                .ifPresentOrElse(
+                    { maxMistakes: Int -> printHardestCards(maxMistakes) }
+                ) { ui.println("There are no cards with errors.") }
+        }
+
+        private fun printHardestCards(maxMistakes: Int) {
+            ui.printf("The hardest card%s %s. You have %d error%s answering them.",
+                if (cards.stream()
+                        .filter { card: Card -> card.mistakes == maxMistakes }
+                        .count() == 1L
+                ) " is" else "s are",
+                cards.stream()
+                    .filter { card: Card -> card.mistakes == maxMistakes }
+                    .map { card: Card ->
+                        String.format(
+                            "\"%s\"",
+                            card.term
+                        )
+                    }
+                    .collect(Collectors.joining(", ")),
+                maxMistakes, if (maxMistakes > 1) "s" else "")
+        }
+    }
+  learner_created: true
+- name: src/flashcards/UI.kt
+  visible: true
+  text: |-
+    package flashcards
+
+    import java.io.FileWriter
+    import java.io.IOException
+    import java.io.PrintWriter
+    import java.util.*
+    import java.util.function.Consumer
+    import kotlin.collections.ArrayList
+
+
+    class UI {
+        private val sc: Scanner = Scanner(System.`in`)
+        private val log: MutableList<String?> = ArrayList()
+        fun printf(format: String?, vararg args: Any?) {
+            val line = String.format(format!!, *args)
+            println(line)
+        }
+
+        fun println(line: String?) {
+            kotlin.io.println(line)
+            log.add(line)
+        }
+
+        fun nextLine(): String {
+            val line = sc.nextLine()
+            log.add(line)
+            return line
+        }
+
+        fun saveLog() {
+            println("File name:")
+            try {
+                PrintWriter(FileWriter(nextLine())).use { out ->
+                    log.forEach(Consumer { x: String? ->
+                        out.println(
+                            x
+                        )
+                    })
+                }
+            } catch (e: IOException) {
+                println(e.message)
+            }
+            println("The log has been saved.")
+        }
+    }
+  learner_created: true
+- name: src/flashcards/Card.kt
+  visible: true
+  text: |-
+    package flashcards
+
+
+    class Card(val term: String, val definition: String, var mistakes: Int) {
+
+        fun resetStats() {
+            mistakes = 0
+        }
+
+        fun increaseMistakes() {
+            ++mistakes
+        }
+    }
+  learner_created: true
+- name: src/flashcards/App.kt
+  visible: true
+  text: |-
+    package flashcards
+
+    import java.util.*
+
+
+    class App (args: Array<String>) : Runnable {
+        private val ui: UI = UI()
+        private val repository: CardsRepository = CardsRepository(ui)
+        private var importFileName = Optional.empty<String>()
+        private var exportFileName = Optional.empty<String>()
+
+        init {
+            parseArgs(*args)
+        }
+
+        override fun run() {
+            importFileName.ifPresent { fileName: String ->
+                repository.cardsImport(
+                    fileName
+                )
+            }
+            menu()
+            exportFileName.ifPresent { fileName: String ->
+                repository.cardsExport(
+                    fileName
+                )
+            }
+        }
+
+        fun menu() {
+            do {
+                ui.println("Input the action (add, remove, import, export, ask, log, hardest card, reset stats, exit):")
+                val action = ui.nextLine().lowercase(Locale.getDefault())
+                when (action) {
+                    ACTION_ADD -> repository.add()
+                    ACTION_REMOVE -> repository.remove()
+                    ACTION_IMPORT -> repository.cardsImport()
+                    ACTION_EXPORT -> repository.cardsExport()
+                    ACTION_ASK -> repository.ask()
+                    ACTION_LOG -> ui.saveLog()
+                    ACTION_HARDEST_CARD -> repository.hardestCard()
+                    ACTION_RESET_STATS -> repository.resetStats()
+                    ACTION_EXIT -> {
+                        ui.println("Bye bye!")
+                        return
+                    }
+
+                    else -> ui.println("The action is not recognized.")
+                }
+            } while (true)
+        }
+
+        fun parseArgs(vararg args: String) {
+            var i = 0
+            while (i < args.size) {
+                if (CLI_IMPORT == args[i]) {
+                    importFileName = Optional.ofNullable(args[i + 1])
+                }
+                if (CLI_EXPORT == args[i]) {
+                    exportFileName = Optional.ofNullable(args[i + 1])
+                }
+                i += 2
+            }
+        }
+
+        companion object {
+            private const val ACTION_ADD = "add"
+            private const val ACTION_REMOVE = "remove"
+            private const val ACTION_IMPORT = "import"
+            private const val ACTION_EXPORT = "export"
+            private const val ACTION_ASK = "ask"
+            private const val ACTION_LOG = "log"
+            private const val ACTION_HARDEST_CARD = "hardest card"
+            private const val ACTION_RESET_STATS = "reset stats"
+            private const val ACTION_EXIT = "exit"
+            private const val CLI_IMPORT = "-import"
+            private const val CLI_EXPORT = "-export"
+        }
+    }
+  learner_created: true
+feedback_link: https://hyperskill.org/projects/83/stages/458/implement#comment
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Sat, 26 Aug 2023 10:53:12 UTC"
+record: 2
